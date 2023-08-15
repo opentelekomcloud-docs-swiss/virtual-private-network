@@ -1,0 +1,199 @@
+:original_name: en_topic_0093011474.html
+
+.. _en_topic_0093011474:
+
+Authentication
+==============
+
+Requests for calling an API can be authenticated using either of the following methods:
+
+-  Token authentication: Requests are authenticated using tokens.
+-  AK/SK authentication: Requests are encrypted using AK/SK pairs. AK/SK authentication is recommended because it is more secure than token authentication.
+
+Token Authentication
+--------------------
+
+.. note::
+
+   The validity period of a token is 24 hours. When using a token for authentication, cache it to prevent frequently calling the IAM API used to obtain a user token.
+
+A token specifies temporary permissions in a computer system. During API authentication using a token, the token is added to requests to get permissions for calling the API. You can obtain a token by calling the Obtaining User Token API.
+
+A cloud service can be deployed as either a project-level service or global service.
+
+-  For a project-level service, you need to obtain a project-level token. When you call the API, set **auth.scope** in the request body to **project**.
+-  For a global service, you need to obtain a global token. When you call the API, set **auth.scope** in the request body to **domain**.
+
+IMS is a project-level service. When you call the API, set **auth.scope** in the request body to **project**.
+
+.. code-block::
+
+   {
+       "auth": {
+           "identity": {
+               "methods": [
+                   "password"
+               ],
+               "password": {
+                   "user": {
+                       "name": "username",
+                       "password": "********",
+                       "domain": {
+                           "name": "domainname"
+                       }
+                   }
+               }
+           },
+           "scope": {
+               "project": {
+                   "name": "xxxxxxxx"
+               }
+           }
+       }
+   }
+
+After a token is obtained, the **X-Auth-Token** header field must be added to requests to specify the token when calling other APIs. For example, if the token is **ABCDEFJ....**, **X-Auth-Token: ABCDEFJ....** can be added to a request as follows:
+
+.. code-block:: text
+
+   POST https://{{endpoint}}/v3/auth/projects
+   Content-Type: application/json
+   X-Auth-Token: ABCDEFJ....
+
+AK/SK Authentication
+--------------------
+
+An AK/SK is used to verify the identity of a request sender. In AK/SK authentication, a signature needs to be obtained and then added to requests.
+
+.. note::
+
+   AK: access key ID, which is a unique identifier used in conjunction with a secret access key to sign requests cryptographically.
+
+   SK: secret access key used in conjunction with an AK to sign requests cryptographically. It identifies a request sender and prevents the request from being modified.
+
+The following uses a demo project to show how to sign a request and use an HTTP client to send an HTTPS request.
+
+Download the demo project at https://github.com/api-gate-way/SdkDemo.
+
+If you do not need the demo project, visit the following URL to download the API Gateway signing SDK:
+
+Obtain the API Gateway signing SDK from the enterprise administrator.
+
+Decompress the downloaded package and reference the obtained JAR files as dependencies.
+
+
+.. figure:: /_static/images/en-us_image_0147174742.png
+   :alt: **Figure 1** Introducing the API Gateway signing SDK
+
+   **Figure 1** Introducing the API Gateway signing SDK
+
+#. Generate an AK/SK. (If an AK/SK file has already been obtained, skip this step and locate the downloaded AK/SK file. Generally, the file name will be **credentials.csv**.)
+
+   a. Log in to the management console.
+   b. Click the username and select **My Credentials** from the drop-down list.
+
+   c. On the **My Credentials** page, click the **Access Keys** tab.
+   d. Click **Add Access Key**.
+   e. Enter the login password.
+   f. Enter the verification code received by email or SMS message.
+
+      .. note::
+
+         For users created in IAM that have not bound any email address or mobile number, only the login password needs to be entered.
+
+   g. Click **OK** to download the access key.
+
+      .. note::
+
+         Keep the access key secure.
+
+#. Download and decompress the demo project.
+
+#. .. _en_topic_0093011474__en-us_topic_0121671869_li19564155663214:
+
+   Import the demo project to Eclipse.
+
+
+   .. figure:: /_static/images/en-us_image_0147174744.png
+      :alt: **Figure 2** Selecting Existing Projects into Workspace
+
+      **Figure 2** Selecting Existing Projects into Workspace
+
+
+   .. figure:: /_static/images/en-us_image_0147174746.png
+      :alt: **Figure 3** Selecting the demo project
+
+      **Figure 3** Selecting the demo project
+
+
+   .. figure:: /_static/images/en-us_image_0147174748.png
+      :alt: **Figure 4** Structure of the demo project
+
+      **Figure 4** Structure of the demo project
+
+#. Sign the request.
+
+   The request signing method is integrated in the JAR files imported in :ref:`3 <en_topic_0093011474__en-us_topic_0121671869_li19564155663214>`. The request needs to be signed before it is sent. The signature will then be added as part of the HTTP header to the request.
+
+   The demo code is classified into the following classes to demonstrate signing and sending the HTTP request:
+
+   -  **AccessService**: An abstract class that merges the GET, POST, PUT, and DELETE methods into the **access** method.
+   -  **Demo**: Execution entry used to simulate the sending of GET, POST, PUT, and DELETE requests.
+   -  **AccessServiceImpl**: Implements the **access** method, which contains the code required for communication with API Gateway.
+
+   a. Edit the main method in the **Demo.java** file, and replace the bold text with actual values.
+
+      If you use other methods such as POST, PUT, and DELETE, see the corresponding comment.
+
+      Specify **region**, **serviceName**, **ak/sk**, and **url** as the actual values. In this demo, the URLs for accessing VPC resources are used.
+
+      To obtain the project ID in the URLs, see :ref:`Obtaining a Project ID <en_topic_0093011475>`.
+
+      To obtain the endpoint, contact the enterprise administrator.
+
+      ::
+
+         //TODO: Replace region with the name of the region in which the service to be accessed is located.
+         private static final String region = "";
+
+         //TODO: Replace vpc with the name of the service you want to access. For example, ecs, vpc, iam, and elb.
+         private static final String serviceName = "";
+
+         public static void main(String[] args) throws UnsupportedEncodingException
+         {
+         //TODO: Replace the AK and SK with those obtained on the My Credentials page.
+         String ak = "ZIRRKMTWP******1WKNKB";
+         String sk = "Us0mdMNHk******YrRCnW0ecfzl";
+
+         //TODO: To specify a project ID (multi-project scenarios), add the X-Project-Id header.
+         //TODO: To access a global service, such as IAM, DNS, CDN, and TMS, add the X-Domain-Id header to specify an account ID.
+         //TODO: To add a header, find "Add special headers" in the AccessServiceImple.java file.
+
+         //TODO: Test the API
+         String url = "https://{Endpoint}/v1/{project_id}/vpcs";
+         get(ak, sk, url);
+
+         //TODO: When creating a VPC, replace {project_id} in postUrl with the actual value.
+         //String postUrl = "https://serviceEndpoint/v1/{project_id}/cloudservers";
+         //String postbody ="{\"vpc\": {\"name\": \"vpc\",\"cidr\": \"192.168.0.0/16\"}}";
+         //post(ak, sk, postUrl, postbody);
+
+         //TODO: When querying a VPC, replace {project_id} in url with the actual value.
+         //String url = "https://serviceEndpoint/v1/{project_id}/vpcs/{vpc_id}";
+         //get(ak, sk, url);
+
+         //TODO: When updating a VPC, replace {project_id} and {vpc_id} in putUrl with the actual values.
+         //String putUrl = "https://serviceEndpoint/v1/{project_id}/vpcs/{vpc_id}";
+         //String putbody ="{\"vpc\":{\"name\": \"vpc1\",\"cidr\": \"192.168.0.0/16\"}}";
+         //put(ak, sk, putUrl, putbody);
+
+         //TODO: When deleting a VPC, replace {project_id} and {vpc_id} in deleteUrl with the actual values.
+         //String deleteUrl = "https://serviceEndpoint/v1/{project_id}/vpcs/{vpc_id}";
+         //delete(ak, sk, deleteUrl);
+         }
+
+   b. Compile the code and call the API.
+
+      In the **Package Explorer** area on the left, right-click **Demo.java**, choose **Run AS** > **Java Application** from the shortcut menu to run the demo code.
+
+      You can view API call logs on the console.
